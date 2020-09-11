@@ -2,6 +2,7 @@ class HashTableEntry:
     """
     Linked List hash table key/value pair
     """
+
     def __init__(self, key, value):
         self.key = key
         self.value = value
@@ -22,7 +23,8 @@ class HashTable:
 
     def __init__(self, capacity):
         # Your code here
-
+        self.capacity = capacity if capacity > 8 else 8
+        self.bucket_array = [None for i in range(capacity)]
 
     def get_num_slots(self):
         """
@@ -35,7 +37,7 @@ class HashTable:
         Implement this.
         """
         # Your code here
-
+        return self.capacity
 
     def get_load_factor(self):
         """
@@ -44,17 +46,16 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        return len(self.bucket_array)/self.capacity
 
-
-    def fnv1(self, key):
+    '''def fnv1(self, key):
         """
         FNV-1 Hash, 64-bit
 
         Implement this, and/or DJB2.
         """
 
-        # Your code here
-
+        # Your code here'''
 
     def djb2(self, key):
         """
@@ -63,14 +64,20 @@ class HashTable:
         Implement this, and/or FNV-1.
         """
         # Your code here
+        myHash = 5381
+        byte_array = key.encode('utf-8')
 
+        for byte in byte_array:
+            myHash = ((myHash * 33) ^ byte) % 0x100000000
+
+        return myHash
 
     def hash_index(self, key):
         """
         Take an arbitrary key and return a valid integer index
         between within the storage capacity of the hash table.
         """
-        #return self.fnv1(key) % self.capacity
+        # return self.fnv1(key) % self.capacity
         return self.djb2(key) % self.capacity
 
     def put(self, key, value):
@@ -82,7 +89,26 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        key_hash = self.djb2(key)
+        bucket_index = key_hash % self.capacity
 
+        new_node = HashTableEntry(key, value)
+        existing_node = self.bucket_array[bucket_index]
+
+        if existing_node:
+            last_node = None
+            while existing_node:
+                if existing_node.key == key:
+                    # find existing key, we replace the value
+                    existing_node.value = value
+                    return
+                last_node = existing_node
+                existing_node = existing_node.next
+            # if we get this far we didnt find existing key, so add new node to end
+            last_node.next = new_node
+
+        else:
+            self.bucket_array[bucket_index] = new_node
 
     def delete(self, key):
         """
@@ -93,7 +119,20 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        key_hash = self.djb2(key)
+        bucket_index = key_hash % self.capacity
 
+        existing_node = self.bucket_array[bucket_index]
+        if existing_node:
+            last_node = None
+            while existing_node:
+                if existing_node.key == key:
+                    if last_node:
+                        last_node.next = existing_node.next
+                    else:
+                        self.bucket_array[bucket_index] = existing_node.next
+                last_node = existing_node
+                existing_node = existing_node.next
 
     def get(self, key):
         """
@@ -104,7 +143,16 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        key_hash = self.djb2(key)
+        bucket_index = key_hash % self.capacity
 
+        existing_node = self.bucket_array[bucket_index]
+        if existing_node:
+            while existing_node:
+                if existing_node.key == key:
+                    return existing_node.value
+                existing_node = existing_node.next
+        return None
 
     def resize(self, new_capacity):
         """
@@ -114,7 +162,21 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        if new_capacity > 8:
+            self.capacity = new_capacity
+        else:
+            self.capacity = 8
 
+        old_array = self.bucket_array
+        self.bucket_array = [None] * self.capacity
+
+        current_node = None
+
+        for oldEntry in old_array:
+            current_node = oldEntry
+            while current_node:
+                self.put(current_node.key, current_node.value)
+                current_node = current_node.next
 
 
 if __name__ == "__main__":
@@ -151,3 +213,6 @@ if __name__ == "__main__":
         print(ht.get(f"line_{i}"))
 
     print("")
+
+    myhashTable = HashTable(15)
+    print(myhashTable.capacity, ' mine')
